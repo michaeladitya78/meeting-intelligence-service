@@ -1,0 +1,72 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime  @default(now())
+  meetings     Meeting[]
+}
+
+model Meeting {
+  id          String            @id @default(uuid())
+  title       String
+  participants String[]
+  meetingDate DateTime
+  transcript  Json
+  createdBy   String
+  user        User              @relation(fields: [createdBy], references: [id])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  analyses    MeetingAnalysis[]
+  actionItems ActionItem[]
+}
+
+model MeetingAnalysis {
+  id          String   @id @default(uuid())
+  meetingId   String
+  meeting     Meeting  @relation(fields: [meetingId], references: [id])
+  summary     Json
+  decisions   Json
+  actionItems Json
+  followUps   Json
+  createdAt   DateTime @default(now())
+}
+
+model ActionItem {
+  id        String       @id @default(uuid())
+  meetingId String
+  meeting   Meeting      @relation(fields: [meetingId], references: [id])
+  task      String
+  assignee  String
+  dueDate   DateTime?
+  status    ActionStatus @default(PENDING)
+  citations Json
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  reminders ReminderLog[]
+}
+
+model ReminderLog {
+  id           String     @id @default(uuid())
+  actionItemId String
+  actionItem   ActionItem @relation(fields: [actionItemId], references: [id])
+  sentAt       DateTime   @default(now())
+  channel      String
+  success      Boolean
+  errorMessage String?
+}
+
+enum ActionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
