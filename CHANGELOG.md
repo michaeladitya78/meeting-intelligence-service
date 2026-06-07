@@ -1,78 +1,43 @@
-# Changelog
+Project Changelog
+=================
 
-All notable changes to this project will be documented in this file.
+All notable changes and milestones for the Meeting Intelligence Service are documented below.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+Milestone 1: Project Setup and Infrastructure
+=============================================
+- Created the Express server environment using Node.js and TypeScript.
+- Set up security measures including CORS and Helmet headers.
+- Implemented Winston for structured logging with trace ID propagation.
+- Integrated Swagger for interactive API documentation.
 
----
+Milestone 2: Database and Authentication
+========================================
+- Configured PostgreSQL database integration via Prisma ORM.
+- Designed schema models for Users, Meetings, Analyses, Action Items, and Reminder Logs.
+- Implemented user registration and login endpoints utilizing stateless JWT tokens.
+- Secured user passwords using bcrypt hashing.
 
-## [1.0.0] — 2024-12-15
+Milestone 3: Meetings and Transcript Management
+================================================
+- Created endpoints to submit meetings with transcript entries.
+- Added paginated endpoints to list meetings and retrieve individual records.
+- Configured validation schemas using Zod to enforce parameters.
 
-### Added
+Milestone 4: Gemini AI and Citation Grounding
+==============================================
+- Integrated Google Gemini 1.5 Flash API to parse meeting transcripts.
+- Designed structured prompts enforcing rigid JSON outputs.
+- Developed a citation strategy where every summary, decision, and action item must cite its source speaker, timestamp, and quote.
+- Added automatic creation of database action items from AI outputs.
 
-#### Infrastructure & Setup
-- Initialized Node.js + TypeScript project with Express.js
-- Configured TypeScript (`tsconfig.json`) targeting ES2020
-- Set up Jest + ts-jest for testing with Supertest for integration tests
-- Configured Winston logger with JSON format, console and file transports
-- Added Helmet and CORS for security
-- Created `.env.example` with all required environment variables
+Milestone 5: Task Reminders and Resend Email Integration
+=========================================================
+- Developed action item management endpoints for status updates and filtering.
+- Implemented overdue action item detection.
+- Configured node-cron to execute daily checks.
+- Integrated Resend API to send HTML reminder emails for overdue tasks.
 
-#### Database
-- Implemented Prisma schema with 6 models: `User`, `Meeting`, `MeetingAnalysis`, `ActionItem`, `ReminderLog`, `ActionStatus` enum
-- Configured PostgreSQL datasource with connection pooling
-
-#### Authentication Module
-- `POST /api/auth/register` — Email/password registration with bcrypt (10 salt rounds)
-- `POST /api/auth/login` — JWT generation on successful credential verification
-- Zod validation for email format, password length (min 8), name required
-- Password never returned in responses
-
-#### Meetings Module
-- `POST /api/meetings` — Create meeting with transcript (JSON array)
-- `GET /api/meetings` — Paginated listing with metadata (total, page, totalPages)
-- `GET /api/meetings/:id` — Fetch meeting with analyses and action items
-- Participant email validation
-- Meetings scoped to authenticated user
-
-#### Analysis Module
-- `POST /api/meetings/:id/analyze` — Trigger Gemini AI analysis
-- Implemented Gemini 1.5 Flash client with structured JSON prompt
-- Citation grounding: every insight requires timestamp + speaker + quote
-- Hallucination prevention: explicit prompt rules + post-parse validation
-- Auto-retry on JSON parse failure
-- Automatic ActionItem creation from AI-extracted items
-- Results saved to `MeetingAnalysis` table
-
-#### Action Items Module
-- `POST /api/action-items` — Manual action item creation
-- `PATCH /api/action-items/:id/status` — Status updates (PENDING → IN_PROGRESS → COMPLETED)
-- `GET /api/action-items` — Filtered listing (status, assignee, meetingId) with pagination
-- `GET /api/action-items/overdue` — Items past due date and not completed, with meeting title
-
-#### Middleware
-- `traceId.middleware.ts` — UUID trace ID on every request, propagated to response header
-- `auth.middleware.ts` — JWT Bearer token verification, attaches user to request
-- `validate.middleware.ts` — Zod schema validation factory
-- `errorHandler.middleware.ts` — Global error handler with Prisma error mapping
-
-#### Scheduled Jobs
-- `reminderJob.ts` — node-cron job: daily 9 AM (production), every minute (development)
-- Queries overdue action items, sends Resend emails, logs to `ReminderLog` table
-
-#### Integrations
-- `resend.client.ts` — HTML email sender with formatted action item details
-
-#### Documentation
-- Swagger/OpenAPI 3.0 documentation at `/GET /api-docs`
-- All endpoints documented with request/response schemas, auth requirements
-- `README.md` — Setup guide, API examples, deployment instructions
-- `DECISIONS.md` — Architecture Decision Records
-- `AI_APPROACH.md` — Prompt engineering, citation strategy, hallucination prevention
-- `TESTING.md` — Test scenarios and coverage documentation
-
-#### Docker
-- Multi-stage `Dockerfile` (builder + production stages with node:20-alpine)
-- `docker-compose.yml` with `app` + `postgres:15-alpine` services
-- Health checks on both services
-- Volume persistence for PostgreSQL data and application logs
+Milestone 6: Verification and Docker
+====================================
+- Added Jest unit tests with mock Prisma client configurations.
+- Packaged the application with Docker and Docker Compose support.

@@ -1,204 +1,78 @@
-# Meeting Intelligence Service
+Meeting Intelligence Service
+============================
 
-A production-ready backend service that uses **Google Gemini AI** to analyze meeting transcripts, extract action items, identify decisions, and send automated email reminders for overdue tasks.
+This is a backend system designed to manage meetings, analyze transcripts using Google Gemini AI, track action items, and send email reminders for overdue tasks.
 
-## Features
+Features
+========
 
-- 🔐 **JWT Authentication** — Secure register/login with bcrypt password hashing
-- 📋 **Meeting Management** — Create and retrieve meetings with paginated listing
-- 🤖 **AI Analysis** — Google Gemini 1.5 Flash analyzes transcripts with citation grounding
-- 🚫 **Hallucination Prevention** — Every AI insight must cite a real transcript timestamp
-- ✅ **Action Item Management** — CRUD, status updates, overdue detection
-- 📧 **Email Reminders** — Automated Resend emails for overdue action items
-- ⏰ **Scheduled Jobs** — node-cron for daily reminder processing
-- 📊 **Structured Logging** — Winston with JSON format and trace IDs
-- 🔍 **Request Tracing** — UUID trace ID on every request/response
-- 🛡️ **Global Error Handling** — Consistent error responses, never crashes
-- ✔️ **Input Validation** — Zod schemas on all endpoints
-- 📖 **Swagger Docs** — Full OpenAPI 3.0 documentation at `/api-docs`
-- 🐳 **Docker Support** — Multi-stage Dockerfile + docker-compose
+- User registration and login using JWT tokens and bcrypt password hashing.
+- Meeting creation and list endpoints with built-in pagination.
+- AI analysis utilizing Google Gemini 1.5 Flash to generate summaries, decisions, action items, and follow-ups.
+- Citation grounding where every generated item cites a timestamp and speaker from the transcript to prevent hallucinations.
+- Action item tracking with status updates and overdue task detection.
+- Automated email reminders using Resend sent on a daily cron schedule.
+- Request tracing with trace IDs and structured Winston logging.
 
-## Prerequisites
+Prerequisites
+=============
 
-- Node.js 20+
-- PostgreSQL 15+
-- Google Gemini API key ([Get one free](https://aistudio.google.com/app/apikey))
-- Resend API key ([Get one free](https://resend.com))
+- Node.js version 20 or higher
+- PostgreSQL version 15 or higher
+- A Google Gemini API key
+- A Resend API key
 
-## Local Setup
+Local Setup
+===========
 
-### 1. Clone and install dependencies
+1. Clone the repository and install the dependencies:
+   npm install
 
-```bash
-git clone https://github.com/YOUR_USERNAME/meeting-intelligence-service.git
-cd meeting-intelligence-service
-npm install
-```
+2. Configure environment variables. Copy the example file to a new file named .env and fill in your values.
 
-### 2. Configure environment variables
+   DATABASE_URL: PostgreSQL connection string
+   JWT_SECRET: Secret key for signing JSON Web Tokens
+   JWT_EXPIRES_IN: How long the token remains valid (example: 7d)
+   GEMINI_API_KEY: Your Google Gemini API key
+   RESEND_API_KEY: Your Resend API key for email delivery
+   REMINDER_FROM_EMAIL: The sender address for task notifications
+   REMINDER_TO_EMAIL: The destination email address for overdue alerts
+   PORT: The port the server listens on (default is 3000)
+   NODE_ENV: Set to development or production
 
-```bash
-cp .env.example .env
-```
+3. Initialize the database schema and run migrations:
+   npm run db:migrate
 
-Edit `.env`:
+4. Start the application in development mode:
+   npm run dev
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@localhost:5432/meeting_intelligence` |
-| `JWT_SECRET` | Secret for signing JWTs | `my-super-secret-key` |
-| `JWT_EXPIRES_IN` | JWT expiration time | `7d` |
-| `GEMINI_API_KEY` | Google Gemini API key | `AIza...` |
-| `RESEND_API_KEY` | Resend email API key | `re_...` |
-| `REMINDER_FROM_EMAIL` | Email sender address | `reminders@yourdomain.com` |
-| `REMINDER_TO_EMAIL` | Reminder recipient address | `admin@yourdomain.com` |
-| `PORT` | Server port | `3000` |
-| `NODE_ENV` | Environment | `development` |
+The server runs on http://localhost:3000 by default. You can view the API documentation at http://localhost:3000/api-docs.
 
-### 3. Set up the database
+To run the test suite, use the test script:
+   npm test
 
-```bash
-# Create DB and run migrations
-npm run db:migrate
+Deployment
+==========
 
-# Or generate Prisma client only
-npm run db:generate
-```
+You can deploy this application on platforms like Render or Railway. Make sure to:
+- Provision a PostgreSQL database instance.
+- Configure all environment variables in your deployment dashboard.
+- Set the start command to build the project and start the compiled application.
 
-### 4. Start the development server
+API Usage Examples
+==================
 
-```bash
-npm run dev
-```
+Register a user:
+Send a POST request to /api/auth/register with a JSON body containing email, password, and name.
 
-The server will start at `http://localhost:3000`.
-Swagger docs: `http://localhost:3000/api-docs`
+Login:
+Send a POST request to /api/auth/login with your email and password to receive a JWT token.
 
-### 5. Run tests
+Create a meeting:
+Send a POST request to /api/meetings with your Authorization header set to Bearer JWT_TOKEN. The body should contain title, participants, meetingDate, and transcript entries.
 
-```bash
-npm test
-```
+Analyze a meeting:
+Send a POST request to /api/meetings/:id/analyze with your authorization token to trigger the Gemini AI analysis.
 
-## Docker Setup
-
-```bash
-# Build and start all services
-docker-compose up --build
-
-# Run in background
-docker-compose up -d --build
-
-# Stop services
-docker-compose down
-
-# Stop and remove volumes
-docker-compose down -v
-```
-
-## API Examples
-
-### Register
-
-```bash
-curl -X POST http://localhost:3000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "alice@example.com",
-    "password": "securePassword123",
-    "name": "Alice"
-  }'
-```
-
-### Login
-
-```bash
-curl -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "alice@example.com",
-    "password": "securePassword123"
-  }'
-```
-
-### Create a Meeting
-
-```bash
-curl -X POST http://localhost:3000/api/meetings \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{
-    "title": "Q4 Planning Meeting",
-    "participants": ["alice@example.com", "bob@example.com"],
-    "meetingDate": "2024-12-15T10:00:00.000Z",
-    "transcript": [
-      { "timestamp": "00:01", "speaker": "Alice", "text": "Let us start by reviewing Q3 results." },
-      { "timestamp": "02:30", "speaker": "Bob", "text": "I will prepare the budget report by Friday." },
-      { "timestamp": "05:00", "speaker": "Alice", "text": "We decided to launch the new feature in January." }
-    ]
-  }'
-```
-
-### Analyze a Meeting
-
-```bash
-curl -X POST http://localhost:3000/api/meetings/MEETING_ID/analyze \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-### List Meetings (Paginated)
-
-```bash
-curl "http://localhost:3000/api/meetings?page=1&limit=10" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-### Get Overdue Action Items
-
-```bash
-curl http://localhost:3000/api/action-items/overdue \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-### Update Action Item Status
-
-```bash
-curl -X PATCH http://localhost:3000/api/action-items/ACTION_ITEM_ID/status \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{ "status": "COMPLETED" }'
-```
-
-### Health Check
-
-```bash
-curl http://localhost:3000/health
-```
-
-## Railway Deployment
-
-1. Install Railway CLI: `npm install -g @railway/cli`
-2. Login: `railway login`
-3. Initialize: `railway init`
-4. Add PostgreSQL plugin via Railway dashboard
-5. Set environment variables in Railway dashboard
-6. Deploy: `railway up`
-
-The `DATABASE_URL` is automatically injected by Railway when using their PostgreSQL plugin.
-
-## Project Structure
-
-```
-src/
-├── config/          # Database, logger, swagger configuration
-├── middleware/      # Auth, traceId, errorHandler, validate
-├── modules/
-│   ├── auth/        # JWT auth (register/login)
-│   ├── meetings/    # Meeting CRUD
-│   ├── analysis/    # Gemini AI analysis
-│   ├── actionItems/ # Action item management
-│   └── evaluation/  # Evaluation metadata endpoint
-├── jobs/            # node-cron scheduled jobs
-├── integrations/    # Resend email client
-└── utils/           # Response helpers
-```
+Get overdue items:
+Send a GET request to /api/action-items/overdue to retrieve overdue tasks.
